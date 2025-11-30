@@ -1,0 +1,303 @@
+/* ====== СТРАНИЦА БА (БИОХИМИЧЕСКИЙ АНАЛИЗ) ====== */
+
+.ba-page {
+  padding-bottom: 32px;
+}
+
+/* Шапка анализа */
+
+.ba-header {
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.25), transparent 65%),
+    #020617;
+}
+
+.ba-header-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #e5e7eb;
+}
+
+.ba-header-meta {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+/* Заголовки секций */
+
+.ba-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+/* Список показателей */
+
+.ba-parameters-list {
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ba-parameters-list::-webkit-scrollbar {
+  width: 6px;
+}
+.ba-parameters-list::-webkit-scrollbar-track {
+  background: #020617;
+}
+.ba-parameters-list::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 999px;
+}
+
+.ba-param-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 60%),
+    #020617;
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  cursor: pointer;
+  transition:
+    background 0.16s ease-out,
+    border-color 0.16s ease-out,
+    transform 0.12s ease-out,
+    box-shadow 0.12s ease-out;
+}
+
+.ba-param-item:hover {
+  border-color: rgba(129, 140, 248, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.95);
+}
+
+.ba-param-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ba-param-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #e5e7eb;
+}
+
+.ba-param-norm {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.ba-param-price {
+  font-size: 0.78rem;
+  color: #bbf7d0;
+}
+
+/* Таблица результатов */
+
+.ba-result-table {
+  font-size: 0.82rem;
+}
+
+.ba-result-table th,
+.ba-result-table td {
+  vertical-align: middle;
+}
+
+ /* admin-dashboard.css
+        Стиль для панелей и "крутых" плиток админ-панели
+        Подключите рядом с ba.css: <link rel="stylesheet" href="/lab-system/public/css/admin-dashboard.css">
+    */
+
+    /* Цветовая схема — тёмная, акцентные градиенты */
+    :root{
+      --bg:#0f1720;
+      --panel:#11151a;
+      --muted:#9aa6b2;
+      --accent1:#6dd3ff;
+      --accent2:#7be58a;
+      --glass: rgba(255,255,255,0.03);
+      --glass-2: rgba(255,255,255,0.04);
+      --radius:12px;
+      --tile-shadow: 0 6px 18px rgba(3,10,18,0.6);
+      --trans: 220ms cubic-bezier(.2,.9,.3,1);
+    }
+
+    /* Основная страница */
+    .ba-page{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 60%);
+      color: #e6eef6;
+      min-height: 100vh;
+      font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding-bottom: 80px;
+    }
+
+    /* Панель (карточка) — лёгкое стекло */
+    .panel{
+      background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--tile-shadow);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Заголовки */
+    .ba-header-title{
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .ba-header-meta{
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .ba-section-title{
+      font-weight: 600;
+      color: #fff;
+      font-size: 1.05rem;
+    }
+
+    /* Dashboard tiles grid */
+    .row.g-3.mb-4{ margin-bottom:1.25rem; }
+
+    .dashboard-tile{
+      display:block;
+      width:100%;
+      height:100%;
+      padding:16px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      text-decoration: none;
+      color: inherit;
+      transition: transform var(--trans), box-shadow var(--trans), background var(--trans);
+      border: 1px solid rgba(255,255,255,0.03);
+      box-shadow: 0 8px 24px rgba(2,8,16,0.55);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* subtle accent ribbon using pseudo-element */
+    .dashboard-tile::after{
+      content: "";
+      position: absolute;
+      right: -40%;
+      top: -40%;
+      width: 220%;
+      height: 160%;
+      transform: rotate(20deg);
+      background: linear-gradient(90deg, rgba(109,211,255,0.06), rgba(123,229,138,0.04));
+      pointer-events: none;
+    }
+
+    /* Hover interactions */
+    .dashboard-tile:hover{
+      transform: translateY(-6px);
+      box-shadow: 0 18px 40px rgba(2,8,16,0.75);
+      border-color: rgba(255,255,255,0.06);
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+    }
+
+    /* Tile content */
+    .dashboard-tile-type{
+      display:inline-block;
+      font-size: 12px;
+      font-weight:600;
+      color: var(--muted);
+      background: rgba(255,255,255,0.02);
+      padding:6px 10px;
+      border-radius:10px;
+      margin-bottom:10px;
+      letter-spacing:0.4px;
+    }
+
+    .dashboard-tile-title{
+      font-size: 1.05rem;
+      font-weight:700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .dashboard-tile-desc{
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height:1.3;
+      max-width: 100%;
+    }
+
+    /* Responsive adjustments to keep tiles consistent height */
+    .col-12 .dashboard-tile,
+    .col-md-4 .dashboard-tile{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+    }
+
+    /* Форма фильтра — компактная и читабельная */
+    form.row.g-3 .form-label{
+      color: var(--muted);
+      font-weight:600;
+      font-size:0.85rem;
+    }
+    .form-control-sm{
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      color: #eaf2ff;
+      padding:8px 10px;
+      border-radius:8px;
+      transition: box-shadow var(--trans), border-color var(--trans);
+    }
+    .form-control-sm:focus{
+      outline: none;
+      box-shadow: 0 6px 18px rgba(109,211,255,0.06);
+      border-color: rgba(109,211,255,0.5);
+    }
+
+    /* Итоги по периоду (панели маленькие) */
+    .row .panel .fs-6, .row .panel .fs-4{
+      color: #fff;
+    }
+
+    /* Таблица — тёмная стиль */
+    .table-dark.ba-result-table{
+      background: transparent;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .table-dark.ba-result-table th{
+      background: rgba(255,255,255,0.02);
+      color: var(--muted);
+      font-weight:600;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .table-dark.ba-result-table td{
+      background: rgba(255,255,255,0.01);
+      color: #e8f3ff;
+      border-top: 1px solid rgba(255,255,255,0.02);
+    }
+    .table-dark.ba-result-table tr:hover td{
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* Кнопки — небольшой стиль для действий */
+    .btn-sm{
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      transition: transform var(--trans), box-shadow var(--trans);
+    }
+    .btn-sm:hover{ transform: translateY(-2px); }
+
+    /* Специальные утилиты */
+    .text-muted-soft{ color: var(--muted); }
+    .small{ font-size:0.86rem; }
+
+    /* Мелкие адаптивы */
+    @media (max-width: 767px){
+      .dashboard-tile{ padding:12px; border-radius:10px; }
+      .dashboard-tile-title{ font-size:1rem; }
+      .dashboard-tile-desc{ font-size:0.9rem; }
+    }

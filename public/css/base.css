@@ -1,0 +1,525 @@
+/* ====== ШАПКА (HEADER) ====== */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.28), transparent 60%),
+    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.18), transparent 60%),
+    rgba(15, 23, 42, 0.96);
+  border-bottom: 1px solid #1f2937;
+  backdrop-filter: blur(16px);
+
+  /* анимация плавного «движения» градиента, как у футера */
+  background-size: 200% 200%;
+  animation: headerGradientMove 18s ease-in-out infinite;
+  transition: box-shadow 280ms ease, transform 280ms ease;
+}
+
+.header-inner {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* лёгкий подъём шапки при наведении */
+.site-header:hover {
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.85);
+  transform: translateY(1px);
+}
+
+/* Клик по логотипу (ссылка) */
+
+.hospital-logo-wrap {
+  border-radius: 999px;
+  padding: 3px;
+  transition: transform 260ms cubic-bezier(.2,.9,.3,1), box-shadow 260ms ease;
+  will-change: transform, box-shadow;
+}
+
+.hospital-logo-wrap:hover {
+  transform: translateY(-1px) scale(1.03) rotate(-1deg);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.45);
+}
+
+/* Логотип больницы */
+
+.hospital-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(96, 165, 250, 0.7);
+  box-shadow:
+    0 0 16px rgba(59, 130, 246, 0.75),
+    inset 0 0 8px rgba(15, 23, 42, 0.9);
+  background:
+    radial-gradient(circle, rgba(56, 189, 248, 0.9), rgba(37, 99, 235, 0.9));
+  color: #f9fafb;
+  font-weight: 700;
+  font-size: 18px;
+
+  /* мягкий пульс логотипа */
+  animation: headerLogoPulse 5s ease-in-out infinite;
+}
+
+.hospital-logo-cross {
+  transform: translateY(-1px);
+}
+
+/* Название системы */
+
+.brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #e5e7eb;
+}
+
+.brand-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #e5e7eb;
+}
+
+.brand-subtitle {
+  font-weight: 400;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+/* Навигация в шапке */
+
+.site-nav .nav-link-small {
+  position: relative;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 2px;
+  transition: color 180ms ease, transform 200ms ease;
+}
+
+/* подчёркивание-линиЯ при наведении */
+
+.site-nav .nav-link-small::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa, #22c55e);
+  transition: width 220ms ease, opacity 220ms ease;
+  opacity: 0;
+}
+
+.site-nav .nav-link-small:hover {
+  color: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.site-nav .nav-link-small:hover::after {
+  width: 100%;
+  opacity: 1;
+}
+
+/* Пилюля с именем врача */
+
+.user-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  /* лёгкое «дыхание» */
+  animation: userPillFloat 7s ease-in-out infinite;
+}
+
+.user-pill-name {
+  font-size: 0.8rem;
+  color: #e5e7eb;
+  line-height: 1.1;
+}
+
+.user-pill-role {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Кнопки входа / регистрации */
+
+.btn-outline-light {
+  border-radius: 999px;
+  border-color: rgba(148, 163, 184, 0.7);
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, transform 200ms ease;
+}
+
+.btn-outline-light:hover {
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+  border-color: transparent;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-accent-primary {
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ecfdf5;
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.6);
+  transition: background 220ms ease, box-shadow 220ms ease, transform 200ms ease;
+}
+
+.btn-accent-primary:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #ecfdf5;
+  box-shadow: 0 12px 26px rgba(21, 128, 61, 0.8);
+  transform: translateY(-1px);
+}
+
+/* Адаптив для маленьких экранов */
+
+@media (max-width: 576px) {
+  .brand {
+    font-size: 0.95rem;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .hospital-logo {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+
+  .user-pill {
+    display: none; /* можно скрыть имя врача на совсем маленьких экранах */
+  }
+}
+
+/* ====== MAIN CONTENT (фон и анимация появления) ====== */
+
+.main-content {
+  flex: 1 0 auto;
+  padding: 16px 0 24px;
+  background:
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 60%),
+    radial-gradient(circle at bottom, rgba(22, 163, 74, 0.1), transparent 60%),
+    #020617;
+  animation: mainFadeIn 0.45s ease-out;
+}
+
+/* ====== ФУТЕР ====== */
+
+/* Layout helpers to keep footer pinned to the bottom when page content is short. */
+html, body {
+  height: 100%;
+}
+#app, .site-wrapper, .page, .page-wrapper, .main-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+/* Main/content area must be flexible to push footer down */
+main, .content, .page-content, .main-content {
+  flex: 1 0 auto;
+}
+
+/* ====== FOOTER (pinned to bottom inside flex layout) ====== */
+.footer {
+  position: relative;
+  margin-top: auto; /* прижимает футер к низу внутри flex-каркаса */
+  flex-shrink: 0;   /* не даём футеру схлопнуться, чтобы оставаться внизу */
+  z-index: 30;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.32), transparent 60%),
+    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.22), transparent 60%),
+    #020617;
+  border-top: 1px solid #1f2937;
+  color: #9ca3af;
+  overflow: hidden;
+  /* лёгкая анимация смены градиента */
+  background-size: 200% 200%;
+  animation: footerGradientMove 18s ease-in-out infinite;
+  transition: box-shadow 320ms ease, transform 320ms ease;
+}
+
+.footer::before {
+  /* мягкое "дыхание" светового пятна сверху */
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background:
+    radial-gradient(circle at 10% -10%, rgba(59, 130, 246, 0.18), transparent 60%);
+  opacity: 0.8;
+  pointer-events: none;
+  animation: footerGlow 12s ease-in-out infinite;
+  transition: opacity 320ms ease, transform 420ms cubic-bezier(.2,.9,.3,1);
+}
+
+.footer:hover {
+  box-shadow: 0 -10px 40px rgba(37, 99, 235, 0.06);
+  transform: translateY(-2px);
+}
+
+.footer:hover::before {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+/* заголовки футера при наведении */
+.footer:hover .footer-title {
+  color: #ffffff;
+  transform: translateY(-2px);
+  transition: color 220ms ease, transform 220ms ease;
+}
+
+.footer-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.footer-subtitle {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.footer-meta {
+  text-align: center;
+}
+
+/* "Пилюли" с текстом и анимациями */
+
+.footer-pill {
+  position: relative;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.3), transparent 70%),
+    rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  overflow: hidden;
+  font-size: 0.76rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* мягкое "подпрыгивание" */
+  animation: footerPillFloat 6s ease-in-out infinite;
+
+  /* hover/interaction-friendly properties */
+  transition: transform 300ms cubic-bezier(.2,.9,.3,1), box-shadow 300ms ease, background 300ms ease, filter 300ms ease;
+  will-change: transform, box-shadow, opacity;
+  cursor: default;
+}
+
+.footer-pill:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 18px 30px rgba(16, 185, 129, 0.10), 0 6px 18px rgba(59, 130, 246, 0.06);
+  background: radial-gradient(circle at top left, rgba(59,130,246,0.36), rgba(34,197,94,0.18));
+  filter: saturate(1.06) brightness(1.02);
+  cursor: pointer;
+}
+
+/* subtle active / focus states */
+.footer-pill:active {
+  transform: translateY(-2px) scale(0.99);
+}
+
+.footer-pill:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+}
+
+/* разная задержка для анимации, чтобы пилюли "дышали" не синхронно */
+.footer-pill-1 {
+  animation-delay: 0s;
+}
+.footer-pill-2 {
+  animation-delay: 1s;
+}
+.footer-pill-3 {
+  animation-delay: 2s;
+}
+
+/* "блик", который периодически пробегает по пилюле */
+.footer-pill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 120%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(148, 163, 184, 0.12) 40%,
+    rgba(248, 250, 252, 0.18) 50%,
+    transparent 70%
+  );
+  opacity: 0.8;
+  animation: footerPillShine 7s linear infinite;
+  transition: opacity 200ms ease, left 300ms ease;
+}
+
+/* усиление блика при наведении */
+.footer-pill:hover::after {
+  animation-duration: 3s;
+  left: -10%;
+  opacity: 1;
+}
+
+/* ====== АНИМАЦИИ ====== */
+
+/* движение градиента в header */
+@keyframes headerGradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* пульс логотипа */
+@keyframes headerLogoPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 16px rgba(59, 130, 246, 0.75),
+      inset 0 0 8px rgba(15, 23, 42, 0.9);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow:
+      0 0 22px rgba(56, 189, 248, 0.95),
+      inset 0 0 10px rgba(15, 23, 42, 1);
+  }
+}
+
+/* лёгкая «жизнь» плашки пользователя */
+@keyframes userPillFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+/* плавное появление main */
+@keyframes mainFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes footerGradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes footerGlow {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes footerPillFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes footerPillShine {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(140%);
+  }
+}
+
+/* Адаптив футера */
+
+@media (max-width: 576px) {
+  .footer-subtitle {
+    font-size: 0.72rem;
+  }
+
+  .footer-pill {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+}
+
+/* ПАНЕЛИ (карточки) */
+
+.panel {
+  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 65%),
+    #0b1120;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 55, 0.8);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
+  color: white;
+  animation: panelFadeIn 0.35s ease-out;
+}
+
+@keyframes panelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.text-muted-soft {
+  color: #9ca3af;
+}

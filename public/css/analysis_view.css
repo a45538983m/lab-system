@@ -1,0 +1,87 @@
+/* ====== СТРАНИЦА ПРОСМОТРА АНАЛИЗА / ЧЕКА ====== */
+
+.analysis-view-page {
+  padding-bottom: 32px;
+}
+
+.analysis-paper {
+  background: #f9fafb;
+  color: #111827;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  
+}
+
+/* Таблица внутри "бумаги" светлая */
+
+.analysis-paper .table {
+  background-color: white;
+  color: #111827;
+}
+
+.analysis-paper .table thead th {
+  background-color: #e5e7eb;
+}
+
+.analysis-clinic-name {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6b7280;
+}
+
+.analysis-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.analysis-info .info-label {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.analysis-info .info-value {
+  font-weight: 600;
+  color: #111827;
+}
+
+.analysis-table {
+  font-size: 0.82rem;
+}
+
+.analysis-table th,
+.analysis-table td {
+  border-color: #cbd5f5;
+}
+
+.analysis-footer {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 8px;
+}
+
+/* Принт-режим */
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .site-header,
+  .footer,
+  .btn,
+  .analysis-view-page > .d-flex {
+    display: none !important;
+  }
+
+  .analysis-view-page {
+    padding: 0;
+  }
+
+  .analysis-paper {
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}

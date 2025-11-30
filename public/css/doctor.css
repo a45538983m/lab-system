@@ -1,0 +1,134 @@
+/* ====== ГЛАВНАЯ СТРАНИЦА ВРАЧА (DOCTOR MAIN) ====== */
+
+.doctor-main {
+  padding-top: 24px;
+  padding-bottom: 32px;
+}
+
+.doctor-subtitle {
+  color: #9ca3af;
+  font-size: 0.86rem;
+}
+
+/* Кнопка пациента */
+
+.doctor-patient-btn {
+  border-radius: 999px;
+  padding-inline: 18px;
+  font-size: 0.85rem;
+}
+
+/* Плитки анализов */
+
+.dashboard-tiles {
+  margin-top: 8px;
+}
+
+.dashboard-tile {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.35), transparent 60%),
+    #020617;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  padding: 14px 14px 16px;
+  color: #e5e7eb;
+  text-decoration: none;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.16s ease-out,
+    box-shadow 0.16s ease-out,
+    border-color 0.16s ease-out,
+    background 0.16s ease-out;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.85);
+}
+
+.dashboard-tile:hover {
+  transform: translateY(-4px);
+  border-color: rgba(129, 140, 248, 0.9);
+  box-shadow: 0 22px 55px rgba(37, 99, 235, 0.7);
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.45), transparent 60%),
+    #020617;
+}
+
+.dashboard-tile-type {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #a5b4fc;
+  margin-bottom: 4px;
+}
+
+.dashboard-tile-title {
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.dashboard-tile-desc {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin-top: 6px;
+}
+
+/* Маленький светящийся круг справа */
+
+.dashboard-tile::after {
+  content: "";
+  position: absolute;
+  right: -12px;
+  top: 24%;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 2px solid rgba(96, 165, 250, 0.55);
+  box-shadow: 0 0 18px rgba(37, 99, 235, 0.9);
+  opacity: 0.8;
+}
+
+/* Информационные панели внизу */
+
+.doctor-panel {
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 60%),
+    #020617;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 55, 0.85);
+  padding: 16px 16px 14px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.85);
+}
+
+.doctor-panel-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin-bottom: 8px;
+}
+
+.doctor-panel-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.82rem;
+  color: #9ca3af;
+}
+
+.doctor-panel-list li {
+  margin-bottom: 4px;
+}
+
+/* Адаптив */
+
+@media (max-width: 576px) {
+  .doctor-main {
+    padding-top: 18px;
+  }
+
+  .dashboard-tile {
+    padding: 12px 12px 14px;
+  }
+
+  .dashboard-tile::after {
+    display: none;
+  }
+}

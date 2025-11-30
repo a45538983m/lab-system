@@ -1,29 +1,41 @@
 <?php
 // pages/admin/admin_stats_export.php
 // Экспорт статистики анализов и показателей в Excel
+// Логика фильтров совпадает с admin_stats.php (date_from, date_to, q)
+// В таблице показателей TUP/TUH не учитываются.
 
 require_once __DIR__ . '/../../includes/functions.php';
 require_admin();
 
 $dateFrom = $_GET['date_from'] ?? '';
 $dateTo   = $_GET['date_to']   ?? '';
+$q        = trim($_GET['q'] ?? '');
 
-$where  = [];
-$params = [];
+// =============================
+// 1) Статистика по анализам
+// =============================
+
+// WHERE для анализов
+$whereAnalysesParts = [];
 
 if ($dateFrom !== '') {
-    $where[]              = 'pa.created_at >= :date_from';
-    $params[':date_from'] = $dateFrom . ' 00:00:00';
+    $fromFull = $pdo->quote($dateFrom . ' 00:00:00');
+    $whereAnalysesParts[] = "pa.created_at >= $fromFull";
 }
-
 if ($dateTo !== '') {
-    $where[]            = 'pa.created_at <= :date_to';
-    $params[':date_to'] = $dateTo . ' 23:59:59';
+    $toFull = $pdo->quote($dateTo . ' 23:59:59');
+    $whereAnalysesParts[] = "pa.created_at <= $toFull";
 }
 
-$whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+if ($q !== '') {
+    $qLike = $pdo->quote('%' . $q . '%');
+    $whereAnalysesParts[] = "(t.name LIKE $qLike OR t.code LIKE $qLike)";
+}
 
-// --- Статистика по количеству анализов по типам ---
+$whereAnalysesSql = $whereAnalysesParts
+    ? 'WHERE ' . implode(' AND ', $whereAnalysesParts)
+    : '';
+
 $sqlAnalyses = "
     SELECT
         t.id,
@@ -33,21 +45,47 @@ $sqlAnalyses = "
     FROM analysis_types t
     LEFT JOIN patient_analyses pa
         ON pa.analysis_type_id = t.id
-        " . ($whereSql ? $whereSql : '') . "
+    $whereAnalysesSql
     GROUP BY t.id, t.code, t.name
     HAVING analyses_count > 0
     ORDER BY analyses_count DESC
 ";
-$stmtAnalyses = $pdo->prepare($sqlAnalyses);
-$stmtAnalyses->execute($params);
-$analysesStats = $stmtAnalyses->fetchAll();
+
+$stmtAnalyses  = $pdo->query($sqlAnalyses);
+$analysesStats = $stmtAnalyses ? $stmtAnalyses->fetchAll() : [];
 
 $totalAnalyses = 0;
 foreach ($analysesStats as $row) {
     $totalAnalyses += (int)$row['analyses_count'];
 }
 
-// --- Статистика по количеству показателей (каждый показатель отдельно) ---
+// =============================
+// 2) Статистика по показателям (без TUP/TUH)
+// =============================
+
+$whereIndicatorsParts = [];
+
+if ($dateFrom !== '') {
+    $fromFull = $pdo->quote($dateFrom . ' 00:00:00');
+    $whereIndicatorsParts[] = "pa.created_at >= $fromFull";
+}
+if ($dateTo !== '') {
+    $toFull = $pdo->quote($dateTo . ' 23:59:59');
+    $whereIndicatorsParts[] = "pa.created_at <= $toFull";
+}
+
+// исключаем показатели, относящиеся к TUP/TUH
+$whereIndicatorsParts[] = "(t.code IS NULL OR t.code NOT IN ('TUP', 'TUH'))";
+
+if ($q !== '') {
+    $qLike = $pdo->quote('%' . $q . '%');
+    $whereIndicatorsParts[] = "(ai.name LIKE $qLike OR t.name LIKE $qLike OR t.code LIKE $qLike)";
+}
+
+$whereIndicatorsSql = $whereIndicatorsParts
+    ? 'WHERE ' . implode(' AND ', $whereIndicatorsParts)
+    : '';
+
 $sqlIndicators = "
     SELECT
         ai.id,
@@ -63,39 +101,48 @@ $sqlIndicators = "
         ON pa.id = i.patient_analysis_id
     LEFT JOIN analysis_types t
         ON ai.analysis_type_id = t.id
-        " . ($whereSql ? $whereSql : '') . "
+    $whereIndicatorsSql
     GROUP BY ai.id, ai.name, ai.norm_text, t.code, t.name
     HAVING indicators_count > 0
     ORDER BY indicators_count DESC
 ";
-$stmtIndicators = $pdo->prepare($sqlIndicators);
-$stmtIndicators->execute($params);
-$indicatorsStats = $stmtIndicators->fetchAll();
+
+$stmtIndicators  = $pdo->query($sqlIndicators);
+$indicatorsStats = $stmtIndicators ? $stmtIndicators->fetchAll() : [];
 
 $totalIndicators = 0;
 foreach ($indicatorsStats as $row) {
     $totalIndicators += (int)$row['indicators_count'];
 }
 
-// --- Имя файла ---
+// =============================
+// Имя файла
+// =============================
 $filename = 'stats_analyses_';
 if ($dateFrom !== '' || $dateTo !== '') {
     $filename .= ($dateFrom !== '' ? $dateFrom : '...') . '_' . ($dateTo !== '' ? $dateTo : '...');
 } else {
     $filename .= 'all_dates';
 }
+if ($q !== '') {
+    $filename .= '_search';
+}
 $filename .= '.xls';
 
-// --- Заголовки для Excel ---
+// =============================
+// Вывод Excel (HTML-таблицы)
+// =============================
 header("Content-Type: application/vnd.ms-excel; charset=utf-8");
 header("Content-Disposition: attachment; filename=\"$filename\"");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-// Excel понимает HTML
+// BOM для UTF-8 (чтобы кириллица не ломалась)
+echo "\xEF\xBB\xBF";
+
 echo "<html><head><meta charset=\"utf-8\"></head><body>";
 
-// Шапка
+// ШАПКА
 echo '
 <table border="0" cellspacing="0" cellpadding="4"
        style="font-family: Arial, sans-serif; font-size:10pt; width:100%;">
@@ -117,6 +164,10 @@ if ($dateFrom !== '' || $dateTo !== '') {
     echo 'Период: все даты';
 }
 
+if ($q !== '') {
+    echo '<br>Поиск: <strong>' . htmlspecialchars($q) . '</strong>';
+}
+
 echo '
         </td>
     </tr>
@@ -124,7 +175,7 @@ echo '
 </table>
 ';
 
-// --- Таблица 1: количество анализов по типам ---
+// ---------- ТАБЛИЦА 1: АНАЛИЗЫ ПО ТИПАМ ----------
 echo '
 <table border="1" cellspacing="0" cellpadding="4"
        style="font-family: Arial, sans-serif; font-size:10pt; width:100%; border-collapse:collapse;">
@@ -169,16 +220,13 @@ echo '</table>';
 
 echo '<br><br>';
 
-// --- Таблица 2: количество показателей (каждый показатель отдельно) ---
+// ---------- ТАБЛИЦА 2: ПОКАЗАТЕЛИ (без TUP/TUH) ----------
 echo '
 <table border="1" cellspacing="0" cellpadding="4"
        style="font-family: Arial, sans-serif; font-size:10pt; width:100%; border-collapse:collapse;">
     <tr style="font-weight:bold; background-color:#e5e7eb;">
         <th style="width:40px;">№</th>
-        <th style="width:80px;">Код типа</th>
-        <th>Тип анализа</th>
-        <th>Показатель</th>
-        <th style="width:260px;">Норма</th>
+        <th>Имя показателя</th>
         <th style="width:160px;">Кол-во раз</th>
         <th style="width:160px;">Доля от всех, %</th>
     </tr>
@@ -192,10 +240,7 @@ if ($indicatorsStats) {
 
         echo '<tr>';
         echo '<td>' . $i++ . '</td>';
-        echo '<td>' . htmlspecialchars($row['type_code'] ?? '') . '</td>';
-        echo '<td>' . htmlspecialchars($row['type_name'] ?? '') . '</td>';
         echo '<td>' . htmlspecialchars($row['indicator_name']) . '</td>';
-        echo '<td>' . htmlspecialchars($row['norm_text']) . '</td>';
         echo '<td>' . $count . '</td>';
         echo '<td>' . $percent . '%</td>';
         echo '</tr>';
@@ -203,14 +248,14 @@ if ($indicatorsStats) {
 
     echo '
     <tr style="font-weight:bold;">
-        <td colspan="5" align="right">Итого показателей (строк):</td>
+        <td colspan="2" align="right">Итого строк статистики:</td>
         <td>' . (int)$totalIndicators . '</td>
         <td></td>
     </tr>';
 } else {
     echo '
     <tr>
-        <td colspan="7" align="center">За выбранный период показатели не найдены.</td>
+        <td colspan="4" align="center">За выбранный период показатели не найдены.</td>
     </tr>';
 }
 

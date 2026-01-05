@@ -491,7 +491,8 @@ require_once __DIR__ . '/../../includes/header.php';
                         <tfoot>
                             <tr>
                                 <th colspan="4" class="text-end">Итого:</th>
-                                <th><?php echo number_format($totalPrice, 2, '.', ' '); ?></th>
+                                <th><?php //echo number_format($totalPrice, 2, '.', ' ');
+                                echo 25 ?></th>
                             </tr>
                         </tfoot>
                     </table>

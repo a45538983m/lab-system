@@ -104,6 +104,15 @@ $createdAtFormatted = $createdAt ? date('d.m.Y H:i', strtotime($createdAt)) : ''
 // Номер чека и сумма
 $checkNumber = $header['check_number'] ?? '';
 $totalPrice  = (float)$header['total_price'];
+// Номер чека и сумма
+$checkNumber = $header['check_number'] ?? '';
+$totalPrice  = (float)$header['total_price'];
+
+// Для анализов TUP и TUH итоговая сумма всегда 25
+if ($analysisTypeCode === 'TUP' || $analysisTypeCode === 'TUH') {
+    $totalPrice = 25.00;
+}
+
 
 // Короткое название клиники для текста
 $clinicShort = 'Гос. больница / Лаборатория';

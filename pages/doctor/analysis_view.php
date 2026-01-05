@@ -115,7 +115,7 @@ if ($analysisTypeCode === 'TUP' || $analysisTypeCode === 'TUH') {
 
 
 // Короткое название клиники для текста
-$clinicShort = 'Гос. больница / Лаборатория';
+$clinicShort = 'Шифои Замон / Лаборатория';
 
 $analysisLabel = ($analysisTypeCode === 'BA')
     ? 'Биохимический анализ крови'
@@ -240,7 +240,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <div class="row">
                 <div class="col-12 col-md-6">
                     <div class="analysis-clinic-name">
-                        Государственная больница / Лаборатория
+                        Шифои Замон / Лаборатория
                     </div>
                     <div class="analysis-title">
                         <?php

@@ -480,7 +480,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <th colspan="4" class="text-end">Итого:</th>
                                 <th><?php 
                                 //echo number_format($totalPrice, 2, '.', ' '); 
-                                echo 25 ?></th>
+                                echo 20 ?></th>
                             </tr>
                         </tfoot>
                     </table>

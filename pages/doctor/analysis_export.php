@@ -117,8 +117,8 @@ echo "<html><head><meta charset=\"utf-8\"></head><body>";
 if ($mode === 'check') {
 
     // Название больницы можно потом поменять
-    $clinicName    = 'Городская клиническая больница №1';
-    $clinicAddress = 'г. Душанбе, ул. Примерная, 10';
+    $clinicName    = 'Шифои Замон';
+    $clinicAddress = 'г. Исфара, Чоркучаги Орзу';
     $clinicInn     = 'ИНН 1234567890';
 
     echo '

@@ -91,9 +91,9 @@ $items = $stmtItems->fetchAll();
 
 // ---- СТРОИМ HTML ДЛЯ PDF: 1) ЧЕК, 2) АНАЛИЗ БЕЗ ЦЕН ----
 
-$clinicName    = 'Городская клиническая больница №1';
-$clinicAddress = 'г. Душанбе, ул. Примерная, 10';
-$clinicInn     = 'ИНН 1234567890';
+ $clinicName    = 'Шифои Замон';
+    $clinicAddress = 'г. Исфара, Чоркучаги Орзу';
+    $clinicInn     = 'ИНН 1234567890';
 
 // Тип анализа (человекочитаемый)
 $typeLabel = $analysisTypeName;

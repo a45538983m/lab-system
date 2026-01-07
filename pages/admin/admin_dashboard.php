@@ -57,9 +57,19 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $analyses = $stmt->fetchAll();
 
+// фиксированная цена для анализов TUP и TUH
+foreach ($analyses as &$row) {
+    $code = $row['analysis_type_code'] ?? '';
+    if ($code === 'TUP' || $code === 'TUH') {
+        $row['total_price'] = 20.00;
+    }
+}
+unset($row); // на всякий случай
+
 // общая сумма и количество пациентов
-$grandTotal     = 0.0;
-$patientsSet    = [];
+$grandTotal   = 0.0;
+$patientsSet  = [];
+
 foreach ($analyses as $row) {
     $grandTotal += (float)$row['total_price'];
 
@@ -69,6 +79,8 @@ foreach ($analyses as $row) {
 }
 $patientsCount  = count($patientsSet);
 $analysesCount  = count($analyses);
+
+
 
 // ====== ЭКСПОРТ В EXCEL (сводка) ======
 
@@ -291,7 +303,9 @@ require_once __DIR__ . '/../../includes/header.php';
             <div class="panel p-3">
                 <div class="text-muted-soft small">Общая сумма за период</div>
                 <div class="fs-4 mt-1">
-                    <?php echo number_format($grandTotal, 2, '.', ' '); ?>
+                    <?php 
+                    
+                    echo number_format($grandTotal, 2, '.', ' '); ?>
                 </div>
             </div>
         </div>
@@ -334,6 +348,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                     $typeLabel = 'Общий анализ крови (ТУХ)';
                                 } elseif ($typeLabel === 'TUP') {
                                     $typeLabel = 'Общий анализ мочи (ТУП)';
+                                    
                                 } else {
                                     $typeLabel = $row['analysis_type_name'] ?: 'Анализ';
                                 }

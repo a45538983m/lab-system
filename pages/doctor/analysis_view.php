@@ -109,9 +109,15 @@ $checkNumber = $header['check_number'] ?? '';
 $totalPrice  = (float)$header['total_price'];
 
 // Для анализов TUP и TUH итоговая сумма всегда 25
+// пример: после загрузки шапки анализа
+$analysisTypeCode = $header['analysis_type_code'] ?? '';
+$totalPrice       = (float)$header['total_price'];
+
+// фиксированная сумма для TUP/TUH
 if ($analysisTypeCode === 'TUP' || $analysisTypeCode === 'TUH') {
-    $totalPrice = 25.00;
+    $totalPrice = 20.00;
 }
+
 
 
 // Короткое название клиники для текста

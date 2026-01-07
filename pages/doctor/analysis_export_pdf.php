@@ -73,6 +73,12 @@ $createdAtFormatted = $createdAt ? date('d.m.Y H:i', strtotime($createdAt)) : ''
 $checkNumber        = $header['check_number'] ?? '';
 $totalPrice         = (float)$header['total_price'];
 
+
+// фиксированная сумма для TUP/TUH
+if ($analysisTypeCode === 'TUP' || $analysisTypeCode === 'TUH') {
+    $totalPrice = 20.00;
+}
+
 // ---- ГРУЗИМ СТРОКИ АНАЛИЗА ----
 $sqlItems = "
     SELECT

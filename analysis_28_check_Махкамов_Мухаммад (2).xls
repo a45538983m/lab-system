@@ -1,0 +1,63 @@
+<html><head><meta charset="utf-8"></head><body>
+    <table border="0" cellspacing="0" cellpadding="3"
+           style="font-family: Arial, sans-serif; font-size:10pt; width:320px;">
+        <tr>
+            <td colspan="2" align="center" style="font-weight:bold; font-size:11pt;">
+                Кассовый чек №TUP-20260107130927-5-654
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">Шифои Замон</td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">ИНН 1234567890</td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">г. Исфара, Чоркучаги Орзу</td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">
+                Дата и время: 07.01.2026 15:09
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">
+                ***********************************************
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Пациент:</strong></td>
+            <td>Махкамов Мухаммад (Муж)</td>
+        </tr>
+        <tr>
+            <td><strong>Врач:</strong></td>
+            <td>Олимов Абдурахмон Одилович</td>
+        </tr>
+        <tr>
+            <td><strong>Вид анализа:</strong></td>
+            <td>Общий анализ мочи</td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">
+                ***********************************************
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Сумма к оплате:</strong></td>
+            <td align="right"><strong>20.00</strong></td>
+        </tr>
+        <tr>
+            <td>Способ оплаты:</td>
+            <td align="right">Наличные</td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">
+                -----------------------------------------------
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">
+                Спасибо за обращение в нашу больницу!
+            </td>
+        </tr>
+    </table></body></html>

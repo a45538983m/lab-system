@@ -206,11 +206,16 @@ require_once __DIR__ . '/../../includes/header.php';
                         echo 'Биохимический анализ крови (БА)';
                     } elseif ($analysisTypeCode === 'TUH') {
                         echo 'Общий анализ крови (ТУХ)';
+                        $totalPrice = 20.0;
                     } elseif ($analysisTypeCode === 'TUP') {
                         echo 'Общий анализ мочи (ТУП)';
+                        $totalPrice = 20.0;
                     } else {
                         echo htmlspecialchars($analysisTypeName);
                     }
+                    // Если анализ TUP или TUH, устанавливаем сумму 20
+
+
                 ?>
             </div>
         </div>

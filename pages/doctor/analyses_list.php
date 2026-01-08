@@ -80,6 +80,13 @@ $analyses = $stmt->fetchAll();
 $stmtTypes = $pdo->query("SELECT code, name FROM analysis_types ORDER BY name");
 $types = $stmtTypes->fetchAll();
 
+foreach ($analyses as &$row) {
+    $code = $row['analysis_type_code'] ?? '';
+    if ($code === 'TUP' || $code === 'TUH') {
+        $row['total_price'] = 20.00;
+    }
+}
+unset($row); // на всякий случай
 // Общая сумма по найденным анализам
 $grandTotal = 0.0;
 foreach ($analyses as $row) {

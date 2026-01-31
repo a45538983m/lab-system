@@ -5,18 +5,22 @@
 require_once __DIR__ . '/includes/functions.php';
 
 // 2. Определяем, какую страницу хотят открыть через ?page=...
-//    Например: index.php?page=login  → $page = 'login'
 $page = $_GET['page'] ?? '';
 
 // 3. Если параметр ?page не передан (зашли просто на /lab-system/ )
 if ($page === '') {
     if (is_auth()) {
         // Пользователь уже залогинен
-        if (is_admin()) {
-            // Если это админ (главврач) — в админ-панель
+        $role = function_exists('current_user_role') ? current_user_role() : null;
+
+        if ($role === 'admin') {
+            // Главврач
             $page = 'admin_dashboard';
+        } elseif ($role === 'accept') {
+            // Регистратор / приём — сразу на список пациентов
+            $page = 'patients';
         } else {
-            // Если это обычный врач — на его главную страницу
+            // Обычный врач
             $page = 'doctor_main';
         }
     } else {
@@ -44,6 +48,21 @@ switch ($page) {
         break;
 
 
+    // --- РЕГИСТРАТОР / ПРИЁМ (ROLE = accept) ---
+
+    case 'patients':
+        // Главная страница регистрации пациентов (список/поиск)
+        require_auth();
+        require __DIR__ . '/pages/patients/patients.php';
+        break;
+
+    case 'patients_view':
+        // Просмотр / отметка анализов для конкретного пациента
+        require_auth();
+        require __DIR__ . '/pages/patients/patients_view.php';
+        break;
+
+
     // --- ВРАЧ ---
 
     case 'doctor_main':
@@ -57,63 +76,62 @@ switch ($page) {
         require __DIR__ . '/pages/patients/register.php';
         break;
 
-
-
-    // --- АДМИН ---
-
-    case 'admin_dashboard':
-        require_admin();
-        require __DIR__ . '/pages/admin/admin_dashboard.php';
+    case 'ba':
+        require_auth();
+        require __DIR__ . '/pages/doctor/ba.php';
         break;
 
-
-    // --- ОШИБКА / НЕИЗВЕСТНАЯ СТРАНИЦА ---
-    case 'ba':
-    require_auth();
-    require __DIR__ . '/pages/doctor/ba.php';
-    break;
-        case 'analysis_view':
-    require_auth();
-    require __DIR__ . '/pages/doctor/analysis_view.php';
-    break;
-    case 'analysis_export':
-    require_auth();
-    require __DIR__ . '/pages/doctor/analysis_export.php';
-    break;
-        case 'patient_select':
-    require_auth();
-    require __DIR__ . '/pages/patients/select.php';
-    break;
-
-   case 'tuh':
+    case 'tuh':
         require_auth();
         require __DIR__ . '/pages/doctor/tuh.php';
         break;
+
     case 'tup':
         require_auth();
         require __DIR__ . '/pages/doctor/tup.php';
         break;
-      case 'ifa':
+
+    case 'ifa':
         require_auth();
         require __DIR__ . '/pages/doctor/ifa.php';
         break;
-                // --- ВРАЧ ---
 
+    case 'analysis_view':
+        require_auth();
+        require __DIR__ . '/pages/doctor/analysis_view.php';
+        break;
 
-case 'analyses_list':        // <-- ДОБАВИЛИ
-    require_auth();
-    require __DIR__ . '/pages/doctor/analyses_list.php';
-    break;
-    // --- ОТЧЁТЫ ПО ПАЦИЕНТАМ ---
+    case 'analysis_export':
+        require_auth();
+        require __DIR__ . '/pages/doctor/analysis_export.php';
+        break;
+
+    case 'patient_select':
+        require_auth();
+        require __DIR__ . '/pages/patients/select.php';
+        break;
+    case 'patient_select1':
+        require_auth();
+        require __DIR__ . '/pages/patients/select1.php';
+        break;
+
+    case 'analyses_list':
+        require_auth();
+        require __DIR__ . '/pages/doctor/analyses_list.php';
+        break;
+
     case 'reports':
         require_auth();
         require __DIR__ . '/pages/doctor/reports.php';
         break;
-        case 'sum':
+
+    case 'sum':
         require_auth();
         require __DIR__ . '/pages/doctor/sum.php';
         break;
-            // --- АДМИН ---
+
+
+    // --- АДМИН ---
 
     case 'admin_dashboard':
         require_admin();
@@ -134,22 +152,29 @@ case 'analyses_list':        // <-- ДОБАВИЛИ
         require_admin();
         require __DIR__ . '/pages/admin/admin_users.php';
         break;
-        case 'admin_user_edit':
+
+    case 'admin_user_edit':
         require_admin();
         require __DIR__ . '/pages/admin/admin_user_edit.php';
         break;
-            case 'admin_analysis_edit':
+
+    case 'admin_analysis_edit':
         require_admin();
         require __DIR__ . '/pages/admin/admin_analysis_edit.php';
         break;
-        case 'admin_stats':
+
+    case 'admin_stats':
         require_admin();
         require __DIR__ . '/pages/admin/admin_stats.php';
         break;
-            case 'admin_users_export':
+
+    case 'admin_users_export':
         require_admin();
         require __DIR__ . '/pages/admin/admin_users_export.php';
         break;
+
+
+    // --- ОШИБКА / НЕИЗВЕСТНАЯ СТРАНИЦА ---
     default:
         require __DIR__ . '/pages/errors/404.php';
         break;

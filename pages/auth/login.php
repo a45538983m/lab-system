@@ -39,9 +39,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($user['role'] === 'admin') {
                 header('Location: /lab-system/index.php?page=admin_dashboard');
-            } else {
+            }
+            if ($user && password_verify($password, $user['password_hash'])) {
+    // Авторизуем нового пользователя (перезаписываем сессию)
+    login_user($user);
+
+    if ($user['role'] === 'admin') {
+        // Главврач
+        header('Location: /lab-system/index.php?page=admin_dashboard');
+    } elseif ($user['role'] === 'accept') {
+        // Роль "accept" — сразу на пациентов
+        header('Location: /lab-system/index.php?page=patients');
+    } else {
+        // Обычный врач
+        header('Location: /lab-system/index.php?page=doctor_main');
+    }
+    exit;
+}
+ else {
                 header('Location: /lab-system/index.php?page=doctor_main');
             }
+
             exit;
         } else {
             $error = 'Неверный логин или пароль.';

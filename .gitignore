@@ -1,0 +1,28 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env / secrets
+.env
+.env.*
+
+# Vendor / node
+/vendor/
+/node_modules/
+
+# Logs / cache
+*.log
+/cache/
+/storage/*.key
+
+# Generated / temp
+/public/uploads/
+/tmp/
+
+# Local DB dumps
+*.sql
+
+# Optional: Composer lock зависит от проекта (обычно оставляют)
+# composer.lock

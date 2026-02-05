@@ -1,6 +1,7 @@
 <?php
 // pages/doctor/analysis_view.php
 // Просмотр сохранённого анализа (чек / отчёт)
+// Теперь показывает ВСЕ анализы из объединенного заказа
 
 require_once __DIR__ . '/../../includes/functions.php';
 require_auth();
@@ -14,9 +15,30 @@ if (!$analysisId) {
     die('Не указан ID анализа.');
 }
 
-// Загружаем шапку анализа
-$sqlHeader = "
-    SELECT
+// 1. ПРОВЕРЯЕМ, ЭТО ОБЪЕДИНЕННЫЙ АНАЛИЗ ИЛИ ОТДЕЛЬНЫЙ
+// Ищем связанные анализы по номеру чека (без последней части - идентификатора)
+$sqlCurrent = "
+    SELECT pa.*, t.code as analysis_type_code
+    FROM patient_analyses pa
+    JOIN analysis_types t ON pa.analysis_type_id = t.id
+    WHERE pa.id = :id
+    LIMIT 1
+";
+$stmtCurrent = $pdo->prepare($sqlCurrent);
+$stmtCurrent->execute(['id' => $analysisId]);
+$currentAnalysis = $stmtCurrent->fetch();
+
+if (!$currentAnalysis) {
+    die('Анализ не найден.');
+}
+
+// Извлекаем базовую часть номера чека (без случайного суффикса)
+$checkNumber = $currentAnalysis['check_number'] ?? '';
+$checkBase = preg_replace('/-\d{3}$/', '', $checkNumber); // убираем последние 3 цифры
+
+// 2. НАХОДИМ ВСЕ АНАЛИЗЫ ЭТОГО ЖЕ ЗАКАЗА
+$sqlAllAnalyses = "
+    SELECT 
         pa.*,
         p.first_name   AS patient_first_name,
         p.last_name    AS patient_last_name,
@@ -29,110 +51,133 @@ $sqlHeader = "
     LEFT JOIN patients p   ON pa.patient_id = p.id
     LEFT JOIN users u      ON pa.doctor_id = u.id
     LEFT JOIN analysis_types t ON pa.analysis_type_id = t.id
-    WHERE pa.id = :id
-    LIMIT 1
+    WHERE pa.created_at = :created_at 
+      AND pa.patient_id = :patient_id 
+      AND pa.doctor_id = :doctor_id
+      AND pa.check_number LIKE :check_pattern
+    ORDER BY 
+        CASE t.code 
+            WHEN 'BA' THEN 1
+            WHEN 'TUH' THEN 2
+            WHEN 'TUP' THEN 3
+            ELSE 4
+        END
 ";
 
-$stmt = $pdo->prepare($sqlHeader);
-$stmt->execute(['id' => $analysisId]);
-$header = $stmt->fetch();
+$stmtAll = $pdo->prepare($sqlAllAnalyses);
+$stmtAll->execute([
+    'created_at' => $currentAnalysis['created_at'],
+    'patient_id' => $currentAnalysis['patient_id'],
+    'doctor_id' => $currentAnalysis['doctor_id'],
+    'check_pattern' => $checkBase . '%'
+]);
 
-if (!$header) {
-    die('Анализ не найден.');
+$allAnalyses = $stmtAll->fetchAll();
+
+if (empty($allAnalyses)) {
+    // Если не нашли связанные анализы, используем только текущий
+    $allAnalyses = [$currentAnalysis];
 }
 
-// Небольшая защита: врач видит только свои анализы (админ видит всё)
-if (!is_admin() && current_user_id() !== (int)$header['doctor_id']) {
-    die('У вас нет доступа к этому анализу.');
-}
-
-// Телефон пациента
-$patientPhoneRaw      = $header['patient_phone'] ?? '';
-$patientPhoneDisplay  = $patientPhoneRaw !== '' ? $patientPhoneRaw : '—';
-// только цифры для ссылки WhatsApp
-$patientPhoneDigits   = preg_replace('/\D+/', '', $patientPhoneRaw);
-
-// Собираем абсолютный URL к PDF (для скачивания, если нужно)
-$scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$baseUrl = $scheme . '://' . $host . '/lab-system';
-
-$pdfCombinedUrl = $baseUrl . '/pages/doctor/analysis_export_pdf.php?id=' . $analysisId . '&mode=combined';
-
-// Загружаем строки анализа
-$sqlItems = "
-    SELECT
-        i.*,
-        ai.name      AS indicator_name,
-        ai.norm_text AS norm_text
-    FROM patient_analysis_items i
-    JOIN analysis_indicators ai
-        ON i.indicator_id = ai.id
-    WHERE i.patient_analysis_id = :id
-    ORDER BY ai.id
-";
-$stmtItems = $pdo->prepare($sqlItems);
-$stmtItems->execute(['id' => $analysisId]);
-$items = $stmtItems->fetchAll();
-
-// Пациент
+// Собираем информацию о пациенте из первого анализа
+$firstAnalysis = $allAnalyses[0];
 $patientName = 'Не указан';
 $patientSexLabel = '';
 
-if (!empty($header['patient_last_name']) || !empty($header['patient_first_name'])) {
-    $patientName = trim($header['patient_last_name'] . ' ' . $header['patient_first_name']);
+if (!empty($firstAnalysis['patient_last_name']) || !empty($firstAnalysis['patient_first_name'])) {
+    $patientName = trim($firstAnalysis['patient_last_name'] . ' ' . $firstAnalysis['patient_first_name']);
 }
-if (!empty($header['patient_sex'])) {
-    if ($header['patient_sex'] === 'M') {
+if (!empty($firstAnalysis['patient_sex'])) {
+    if ($firstAnalysis['patient_sex'] === 'M') {
         $patientSexLabel = 'Муж';
-    } elseif ($header['patient_sex'] === 'F') {
+    } elseif ($firstAnalysis['patient_sex'] === 'F') {
         $patientSexLabel = 'Жен';
     }
 }
 
 // Врач
-$doctorName = $header['doctor_name'] ?? '—';
-
-// Тип анализа
-$analysisTypeName = $header['analysis_type_name'] ?? 'Анализ';
-$analysisTypeCode = $header['analysis_type_code'] ?? '';
+$doctorName = $firstAnalysis['doctor_name'] ?? '—';
 
 // Дата/время
-$createdAt          = $header['created_at'] ?? null;
+$createdAt = $firstAnalysis['created_at'] ?? null;
 $createdAtFormatted = $createdAt ? date('d.m.Y H:i', strtotime($createdAt)) : '';
 
-// Номер чека и сумма
-$checkNumber = $header['check_number'] ?? '';
-$totalPrice  = (float)$header['total_price'];
-// Номер чека и сумма
-$checkNumber = $header['check_number'] ?? '';
-$totalPrice  = (float)$header['total_price'];
+// Телефон пациента
+$patientPhoneRaw = $firstAnalysis['patient_phone'] ?? '';
+$patientPhoneDisplay = $patientPhoneRaw !== '' ? $patientPhoneRaw : '—';
+$patientPhoneDigits = preg_replace('/\D+/', '', $patientPhoneRaw);
 
-// Для анализов TUP и TUH итоговая сумма всегда 25
-// пример: после загрузки шапки анализа
-$analysisTypeCode = $header['analysis_type_code'] ?? '';
-$totalPrice       = (float)$header['total_price'];
+// 3. ЗАГРУЖАЕМ ДАННЫЕ ДЛЯ КАЖДОГО АНАЛИЗА
+$analysesData = [];
+$totalOverallPrice = 0;
 
-// фиксированная сумма для TUP/TUH
-if ($analysisTypeCode === 'TUP' || $analysisTypeCode === 'TUH') {
-    $totalPrice = 20.00;
+// ФИКСИРОВАННЫЕ ЦЕНЫ
+$fixed_prices = [
+    'TUH' => 20.00,
+    'TUP' => 20.00
+];
+
+foreach ($allAnalyses as $analysis) {
+    $typeCode = $analysis['analysis_type_code'] ?? '';
+    
+    // Загружаем показатели для этого анализа
+    $sqlItems = "
+        SELECT
+            i.*,
+            ai.name      AS indicator_name,
+            ai.norm_text AS norm_text
+        FROM patient_analysis_items i
+        JOIN analysis_indicators ai ON i.indicator_id = ai.id
+        WHERE i.patient_analysis_id = :id
+        ORDER BY ai.id
+    ";
+    $stmtItems = $pdo->prepare($sqlItems);
+    $stmtItems->execute(['id' => $analysis['id']]);
+    $items = $stmtItems->fetchAll();
+    
+    // Определяем цену
+    $price = (float)$analysis['total_price'];
+    if (isset($fixed_prices[$typeCode])) {
+        $price = $fixed_prices[$typeCode];
+    }
+    
+    $totalOverallPrice += $price;
+    
+    // Название анализа
+    $analysisName = $analysis['analysis_type_name'] ?? '';
+    if ($typeCode === 'BA') {
+        $analysisName = 'Биохимический анализ крови';
+    }
+    
+    // Номер чека
+    $checkNumber = $analysis['check_number'] ?? '';
+    
+    $analysesData[] = [
+        'id' => $analysis['id'],
+        'type_code' => $typeCode,
+        'type_name' => $analysisName,
+        'check_number' => $checkNumber,
+        'price' => $price,
+        'items' => $items,
+        'is_fixed_price' => isset($fixed_prices[$typeCode])
+    ];
 }
 
+// 4. ПРОВЕРКА ДОСТУПА
+if (!is_admin() && current_user_id() !== (int)$firstAnalysis['doctor_id']) {
+    die('У вас нет доступа к этому анализу.');
+}
 
-
-// Короткое название клиники для текста
-$clinicShort = 'Шифои Замон / Лаборатория';
-
-$analysisLabel = ($analysisTypeCode === 'BA')
-    ? 'Биохимический анализ крови'
-    : $analysisTypeName;
+// Собираем абсолютный URL к PDF
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$baseUrl = $scheme . '://' . $host . '/lab-system';
 
 // ---------- ТЕКСТОВЫЙ ЧЕК ДЛЯ МЕССЕНДЖЕРОВ ----------
 $linesCheck = [];
 
-$linesCheck[] = "🧾 ЛАБОРАТОРНЫЙ ЧЕК";
-$linesCheck[] = "Больница: {$clinicShort}";
-$linesCheck[] = "Номер чека: {$checkNumber}";
+$linesCheck[] = "🧾 ЛАБОРАТОРНЫЙ ЧЕК (КОМПЛЕКСНЫЙ АНАЛИЗ)";
+$linesCheck[] = "Больница: Шифои Замон / Лаборатория";
 $linesCheck[] = "Дата: {$createdAtFormatted}";
 $linesCheck[] = str_repeat('─', 30);
 
@@ -142,43 +187,53 @@ if ($patientSexLabel) {
 }
 $linesCheck[] = $linePatient;
 $linesCheck[] = "⚕ Врач: {$doctorName}";
-$linesCheck[] = "🔬 Анализ: {$analysisLabel}";
+$linesCheck[] = "🔬 Состав заказа:";
+foreach ($analysesData as $data) {
+    $priceText = number_format($data['price'], 2, '.', ' ');
+    $linesCheck[] = "  • {$data['type_name']} - {$priceText} с.";
+}
 $linesCheck[] = str_repeat('─', 30);
-$linesCheck[] = "💰 Сумма к оплате: " . number_format($totalPrice, 2, '.', ' ') . " с.";
+$linesCheck[] = "💰 Общая сумма: " . number_format($totalOverallPrice, 2, '.', ' ') . " с.";
 $linesCheck[] = "";
 $linesCheck[] = "Спасибо за обращение!";
 
 $checkText = implode("\n", $linesCheck);
 
-// ---------- ТЕКСТ РЕЗУЛЬТАТОВ АНАЛИЗА (ПОКАЗАТЕЛЬ + РЕЗУЛЬТАТ + НОРМА) ----------
+// ---------- ТЕКСТ РЕЗУЛЬТАТОВ АНАЛИЗА ----------
 $linesAnalysis = [];
 
-$linesAnalysis[] = "🧪 РЕЗУЛЬТАТЫ АНАЛИЗА";
-$linesAnalysis[] = "Тип: {$analysisLabel}";
-$linesAnalysis[] = str_repeat('─', 30);
+$linesAnalysis[] = "🧪 РЕЗУЛЬТАТЫ КОМПЛЕКСНОГО АНАЛИЗА";
+$linesAnalysis[] = "Дата: {$createdAtFormatted}";
+$linesAnalysis[] = str_repeat('═', 40);
 
-if ($items) {
-    foreach ($items as $row) {
-        $indicatorName = $row['indicator_name'] ?? '';
-        $resultValue   = number_format((float)$row['result_value'], 2, '.', ' ');
-        $normText      = trim($row['norm_text'] ?? '');
-
-        $linesAnalysis[] = "• {$indicatorName}";
-        $linesAnalysis[] = "  Результат: {$resultValue}";
-        if ($normText !== '') {
-            $linesAnalysis[] = "  Норма: {$normText}";
+foreach ($analysesData as $data) {
+    $linesAnalysis[] = "📋 " . strtoupper($data['type_name']);
+    $linesAnalysis[] = str_repeat('─', 30);
+    
+    if (!empty($data['items'])) {
+        foreach ($data['items'] as $row) {
+            $indicatorName = $row['indicator_name'] ?? '';
+            $resultValue = number_format((float)$row['result_value'], 2, '.', ' ');
+            $normText = trim($row['norm_text'] ?? '');
+            
+            $linesAnalysis[] = "• {$indicatorName}";
+            $linesAnalysis[] = "  Результат: {$resultValue}";
+            if ($normText !== '') {
+                $linesAnalysis[] = "  Норма: {$normText}";
+            }
+            $linesAnalysis[] = "";
         }
-        $linesAnalysis[] = ""; // пустая строка между показателями
+    } else {
+        $linesAnalysis[] = "Нет данных.";
     }
-} else {
-    $linesAnalysis[] = "Нет показателей для этого анализа.";
+    $linesAnalysis[] = "";
 }
 
 $analysisText = implode("\n", $linesAnalysis);
 
-// ---------- ОБЪЕДИНЁННЫЙ ТЕКСТ: ЧЕК + 5 ОТСТУПОВ + АНАЛИЗ ----------
-$separator   = "\n\n\n\n\n"; // 5 пустых строк
-$fullText    = $checkText . $separator . $analysisText;
+// ---------- ОБЪЕДИНЁННЫЙ ТЕКСТ ----------
+$separator = "\n\n\n\n\n";
+$fullText = $checkText . $separator . $analysisText;
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -187,7 +242,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <div class="container py-4 analysis-view-page">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h5 mb-0">Отчёт по анализу</h1>
+        <h1 class="h5 mb-0">Комплексный анализ (отчёт)</h1>
 
         <div class="d-flex flex-wrap gap-2">
             <!-- Печать HTML-версии -->
@@ -195,47 +250,29 @@ require_once __DIR__ . '/../../includes/header.php';
                 🖨 Печать
             </button>
 
-            <!-- Старые Excel-выгрузки (как были) -->
-            <a
-                href="/lab-system/index.php?page=analysis_export&id=<?php echo $analysisId; ?>&mode=check"
-                class="btn btn-outline-success btn-sm"
-            >
+            <!-- Старые Excel-выгрузки -->
+            <a href="/lab-system/index.php?page=analysis_export&id=<?php echo $analysisId; ?>&mode=check"
+               class="btn btn-outline-success btn-sm">
                 ⬇ Чек (Excel)
             </a>
 
-            <a
-                href="/lab-system/index.php?page=analysis_export&id=<?php echo $analysisId; ?>&mode=full"
-                class="btn btn-outline-success btn-sm"
-            >
+            <a href="/lab-system/index.php?page=analysis_export&id=<?php echo $analysisId; ?>&mode=full"
+               class="btn btn-outline-success btn-sm">
                 ⬇ Полный анализ (Excel)
             </a>
 
-            <!-- PDF: чек + анализ без цен (для печати/архива) -->
-            <a
-                href="/lab-system/pages/doctor/analysis_export_pdf.php?id=<?php echo $analysisId; ?>&mode=combined"
-                class="btn btn-success btn-sm"
-            >
-                ⬇ PDF: чек + анализ
-            </a>
-
-            <!-- Отправка в WhatsApp (если есть телефон пациента) -->
+            <!-- Отправка в WhatsApp -->
             <?php if (!empty($patientPhoneDigits)): ?>
-                <?php
-                    // В WhatsApp отправляем чек + анализ (fullText)
-                    $waLink = 'https://wa.me/' . $patientPhoneDigits . '?text=' . urlencode($fullText);
-                ?>
+                <?php $waLink = 'https://wa.me/' . $patientPhoneDigits . '?text=' . urlencode($fullText); ?>
                 <a href="<?php echo htmlspecialchars($waLink); ?>" target="_blank" class="btn btn-outline-success btn-sm">
-                    📲 Отправить чек и анализ в WhatsApp
+                    📲 Отправить в WhatsApp
                 </a>
             <?php endif; ?>
 
-            <!-- Отправка в Telegram Web (как текст) -->
-            <?php
-                // В Telegram тоже отправляем весь текст (чек + анализ)
-                $tgLink = 'https://t.me/share/url?url=' . urlencode($baseUrl) . '&text=' . urlencode($fullText);
-            ?>
+            <!-- Отправка в Telegram -->
+            <?php $tgLink = 'https://t.me/share/url?url=' . urlencode($baseUrl) . '&text=' . urlencode($fullText); ?>
             <a href="<?php echo htmlspecialchars($tgLink); ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                📨 Отправить чек и анализ в Telegram
+                📨 Отправить в Telegram
             </a>
         </div>
     </div>
@@ -249,18 +286,17 @@ require_once __DIR__ . '/../../includes/header.php';
                         Шифои Замон / Лаборатория
                     </div>
                     <div class="analysis-title">
-                        <?php
-                            if ($analysisTypeCode === 'BA') {
-                                echo 'Биохимический анализ крови';
-                            } else {
-                                echo htmlspecialchars($analysisTypeName);
-                            }
-                        ?>
+                        Комплексный лабораторный анализ
                     </div>
                 </div>
                 <div class="col-12 col-md-6 text-md-end mt-2 mt-md-0">
-                    <div>Номер чека: <strong><?php echo htmlspecialchars($checkNumber); ?></strong></div>
                     <div>Дата и время: <strong><?php echo htmlspecialchars($createdAtFormatted); ?></strong></div>
+                    <div>Номера чеков: 
+                        <?php 
+                            $checkNumbers = array_column($analysesData, 'check_number');
+                            echo htmlspecialchars(implode(', ', $checkNumbers));
+                        ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -294,50 +330,138 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
-        <!-- Таблица показателей (для печати/экрана, с нормой и ценой) -->
-        <div class="table-responsive mb-3">
-            <table class="table table-sm table-bordered align-middle analysis-table">
-                <thead>
-                    <tr>
-                        <th style="width: 50px;">№</th>
-                        <th>Исследование</th>
-                        <th style="width: 140px;">Результат</th>
-                        <th>Норма</th>
-                        <th style="width: 120px;">Цена</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if ($items): ?>
-                        <?php $i = 1; ?>
-                        <?php foreach ($items as $row): ?>
-                            <tr>
-                                <td><?php echo $i++; ?></td>
-                                <td><?php echo htmlspecialchars($row['indicator_name']); ?></td>
-                                <td><?php echo htmlspecialchars(number_format((float)$row['result_value'], 2, '.', ' ')); ?></td>
-                                <td><?php echo htmlspecialchars($row['norm_text']); ?></td>
-                                <td><?php echo number_format((float)$row['price'], 2, '.', ' '); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">
-                                Нет показателей для этого анализа.
-                            </td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <th colspan="4" class="text-end">Итого:</th>
-                        <th><?php echo number_format($totalPrice, 2, '.', ' '); ?></th>
-                    </tr>
-                </tfoot>
-            </table>
+        <!-- Сводная информация по анализам -->
+        <div class="summary-section mb-4 p-3 bg-light rounded">
+            <h5 class="mb-2">Состав заказа:</h5>
+            <div class="row">
+                <?php foreach ($analysesData as $data): ?>
+                    <div class="col-md-4 mb-2">
+                        <div class="card border-0 bg-white">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong><?php echo htmlspecialchars($data['type_name']); ?></strong>
+                                        <div class="small text-muted">
+                                            <?php echo count($data['items']); ?> показателей
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-success">
+                                            <?php echo number_format($data['price'], 2, '.', ' '); ?> с.
+                                        </div>
+                                        <?php if ($data['is_fixed_price']): ?>
+                                            <div class="small text-muted">(фиксированная цена)</div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <!-- Общая сумма -->
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="h5 mb-0">Общая сумма заказа:</div>
+                    <div class="h4 mb-0 text-success">
+                        <?php echo number_format($totalOverallPrice, 2, '.', ' '); ?> сомон
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Результаты по каждому анализу -->
+        <?php foreach ($analysesData as $data): ?>
+            <div class="analysis-section mb-4">
+                <h5 class="mb-3 border-bottom pb-2">
+                    <?php echo htmlspecialchars($data['type_name']); ?>
+                    <span class="badge bg-primary ms-2">Чек: <?php echo htmlspecialchars($data['check_number']); ?></span>
+                </h5>
+                
+                <?php if (!empty($data['items'])): ?>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered align-middle analysis-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">№</th>
+                                    <th>Исследование</th>
+                                    <th style="width: 140px;">Результат</th>
+                                    <th>Норма</th>
+                                    <th style="width: 100px;">Цена</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $i = 1; ?>
+                                <?php foreach ($data['items'] as $row): ?>
+                                    <tr>
+                                        <td><?php echo $i++; ?></td>
+                                        <td><?php echo htmlspecialchars($row['indicator_name']); ?></td>
+                                        <td><?php echo htmlspecialchars(number_format((float)$row['result_value'], 2, '.', ' ')); ?></td>
+                                        <td><?php echo htmlspecialchars($row['norm_text']); ?></td>
+                                        <td>
+                                            <?php if ($data['is_fixed_price']): ?>
+                                                <span class="text-muted">(включено)</span>
+                                            <?php else: ?>
+                                                <?php echo number_format((float)$row['price'], 2, '.', ' '); ?>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="4" class="text-end">Сумма по анализу:</th>
+                                    <th class="text-success">
+                                        <?php 
+                                            echo number_format($data['price'], 2, '.', ' '); 
+                                            if ($data['is_fixed_price']) {
+                                                echo ' (фикс.)';
+                                            }
+                                        ?>
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-warning py-2">
+                        Нет показателей для этого анализа.
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+
+        <!-- Итоговая сумма -->
+        <div class="total-section p-3 bg-dark text-white rounded">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1">ИТОГОВАЯ СУММА К ОПЛАТЕ</h5>
+                    <div class="small">
+                        Включает все выбранные анализы
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="h2 mb-0 text-success">
+                        <?php echo number_format($totalOverallPrice, 2, '.', ' '); ?> с.
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="analysis-footer text-muted-soft small mt-3">
-            Отчёт сгенерирован системой лабораторных анализов.
-            Пациенту можно отправить текст чека и результатов анализа (с нормами) через WhatsApp или Telegram с помощью кнопок выше.
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Примечания:</strong><br>
+                    • ТУХ (общий анализ крови) - фиксированная цена 20 сомон<br>
+                    • ТУП (общий анализ мочи) - фиксированная цена 20 сомон<br>
+                    • БА (биохимический анализ) - сумма выбранных показателей
+                </div>
+                <div class="col-md-6 text-md-end">
+                    Отчёт сгенерирован системой лабораторных анализов.<br>
+                    Каждый анализ сохранен отдельно с собственным номером чека.
+                </div>
+            </div>
         </div>
     </div>
 </div>

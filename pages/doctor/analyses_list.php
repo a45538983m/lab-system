@@ -17,7 +17,7 @@ $dateTo     = trim($_GET['date_to'] ?? '');
 $typeCode   = trim($_GET['type_code'] ?? '');
 $patientQ   = trim($_GET['patient_q'] ?? '');
 
-// ---- БАЗОВЫЙ SQL + ДИНАМИЧЕСКИЕ УСЛОВИЯ ----
+// ---- ЗАПРОС ОБЫЧНЫХ АНАЛИЗОВ ----
 $sql = "
     SELECT
         pa.id,
@@ -28,7 +28,8 @@ $sql = "
         t.name         AS analysis_type_name,
         p.first_name   AS patient_first_name,
         p.last_name    AS patient_last_name,
-        u.full_name    AS doctor_name
+        u.full_name    AS doctor_name,
+        'regular'      AS analysis_category  -- обычный анализ
     FROM patient_analyses pa
     JOIN analysis_types t ON pa.analysis_type_id = t.id
     LEFT JOIN patients p   ON pa.patient_id = p.id
@@ -47,13 +48,13 @@ if (!$isAdmin) {
 // Фильтр по дате "с"
 if ($dateFrom !== '') {
     $sql .= " AND DATE(pa.created_at) >= :date_from";
-    $params['date_from'] = $dateFrom; // формат YYYY-MM-DD
+    $params['date_from'] = $dateFrom;
 }
 
 // Фильтр по дате "по"
 if ($dateTo !== '') {
     $sql .= " AND DATE(pa.created_at) <= :date_to";
-    $params['date_to'] = $dateTo; // формат YYYY-MM-DD
+    $params['date_to'] = $dateTo;
 }
 
 // Фильтр по типу анализа (BA, TUH, TUP, IFA и т.д.)
@@ -69,29 +70,109 @@ if ($patientQ !== '') {
     $params['patient_q2'] = '%' . $patientQ . '%';
 }
 
-$sql .= " ORDER BY pa.created_at DESC, pa.id DESC LIMIT 200";
+$sql .= " ORDER BY pa.created_at DESC, pa.id DESC";
 
-// Подготовка и выполнение
+// ---- ЗАПРОС КОМБИНИРОВАННЫХ АНАЛИЗОВ (только если не выбран конкретный тип) ----
+$combinedAnalyses = [];
+$combinedSql = "";
+$combinedParams = [];
+
+if ($typeCode === '') {
+    $combinedSql = "
+        SELECT
+            ca.id,
+            ca.combined_check_number AS check_number,
+            ca.created_at,
+            ca.total_price,
+            'combined'              AS analysis_type_code,
+            'Комбинированный анализ' AS analysis_type_name,
+            p.first_name            AS patient_first_name,
+            p.last_name             AS patient_last_name,
+            u.full_name             AS doctor_name,
+            'combined'              AS analysis_category  -- комбинированный анализ
+        FROM combined_analyses ca
+        LEFT JOIN patients p   ON ca.patient_id = p.id
+        LEFT JOIN users u      ON ca.doctor_id = u.id
+        WHERE 1=1
+    ";
+    
+    $combinedParams = [];
+    
+    // Если не админ — показываем только комбинированные анализы текущего врача
+    if (!$isAdmin) {
+        $combinedSql .= " AND ca.doctor_id = :doctor_id";
+        $combinedParams['doctor_id'] = $doctorId;
+    }
+    
+    // Фильтр по дате "с"
+    if ($dateFrom !== '') {
+        $combinedSql .= " AND DATE(ca.created_at) >= :date_from";
+        $combinedParams['date_from'] = $dateFrom;
+    }
+    
+    // Фильтр по дате "по"
+    if ($dateTo !== '') {
+        $combinedSql .= " AND DATE(ca.created_at) <= :date_to";
+        $combinedParams['date_to'] = $dateTo;
+    }
+    
+    // Поиск по пациенту для комбинированных
+    if ($patientQ !== '') {
+        $combinedSql .= " AND (p.first_name LIKE :patient_q1 OR p.last_name LIKE :patient_q2)";
+        $combinedParams['patient_q1'] = '%' . $patientQ . '%';
+        $combinedParams['patient_q2'] = '%' . $patientQ . '%';
+    }
+    
+    $combinedSql .= " ORDER BY ca.created_at DESC, ca.id DESC";
+    
+    // Выполняем запрос комбинированных анализов
+    $combinedStmt = $pdo->prepare($combinedSql);
+    $combinedStmt->execute($combinedParams);
+    $combinedAnalyses = $combinedStmt->fetchAll();
+}
+
+// Выполняем запрос обычных анализов
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
-$analyses = $stmt->fetchAll();
+$regularAnalyses = $stmt->fetchAll();
 
-// Список типов анализов для фильтра (чтобы показывать BA / TUH / TUP / IFA)
-$stmtTypes = $pdo->query("SELECT code, name FROM analysis_types ORDER BY name");
-$types = $stmtTypes->fetchAll();
+// Объединяем результаты
+$allAnalyses = array_merge($regularAnalyses, $combinedAnalyses);
 
+// Сортируем по дате создания (новые сверху)
+usort($allAnalyses, function($a, $b) {
+    return strtotime($b['created_at']) - strtotime($a['created_at']);
+});
+
+// Ограничиваем количество (если нужно)
+$analyses = array_slice($allAnalyses, 0, 200);
+
+// Применяем фиксированные цены для TUH и TUP
 foreach ($analyses as &$row) {
     $code = $row['analysis_type_code'] ?? '';
     if ($code === 'TUP' || $code === 'TUH') {
         $row['total_price'] = 20.00;
     }
 }
-unset($row); // на всякий случай
+unset($row);
+
 // Общая сумма по найденным анализам
 $grandTotal = 0.0;
+$regularCount = 0;
+$combinedCount = 0;
+
 foreach ($analyses as $row) {
     $grandTotal += (float)$row['total_price'];
+    if ($row['analysis_category'] === 'combined') {
+        $combinedCount++;
+    } else {
+        $regularCount++;
+    }
 }
+
+// Список типов анализов для фильтра
+$stmtTypes = $pdo->query("SELECT code, name FROM analysis_types ORDER BY name");
+$types = $stmtTypes->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -148,7 +229,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <div class="col-12 col-md-3">
                 <label class="form-label form-label-sm">Тип анализа</label>
                 <select name="type_code" class="form-select form-select-sm">
-                    <option value="">— Все —</option>
+                    <option value="">— Все (включая комбинированные) —</option>
                     <?php foreach ($types as $t): ?>
                         <option value="<?php echo htmlspecialchars($t['code']); ?>"
                             <?php echo ($typeCode === $t['code']) ? 'selected' : ''; ?>>
@@ -206,15 +287,29 @@ require_once __DIR__ . '/../../includes/header.php';
                                 $dt = $row['created_at']
                                     ? date('d.m.Y H:i', strtotime($row['created_at']))
                                     : '';
+                                    
+                                // Название типа анализа с иконкой для комбинированных
+                                $typeBadgeClass = 'bg-secondary';
+                                $typeName = htmlspecialchars($row['analysis_type_name']);
+                                $typeCodeDisplay = htmlspecialchars($row['analysis_type_code']);
+                                
+                                if ($row['analysis_category'] === 'combined') {
+                                    $typeBadgeClass = 'bg-success';
+                                    $typeCodeDisplay = 'COMB';
+                                    $typeName = 'Комбинированный анализ';
+                                }
                             ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo htmlspecialchars($dt); ?></td>
                                 <td>
-                                    <span class="badge bg-secondary me-1">
-                                        <?php echo htmlspecialchars($row['analysis_type_code']); ?>
+                                    <span class="badge <?php echo $typeBadgeClass; ?> me-1">
+                                        <?php echo $typeCodeDisplay; ?>
                                     </span>
-                                    <?php echo htmlspecialchars($row['analysis_type_name']); ?>
+                                    <?php echo $typeName; ?>
+                                    <?php if ($row['analysis_category'] === 'combined'): ?>
+                                        <span class="badge bg-info ms-1">Комплекс</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($patientFullName); ?></td>
                                 <td><?php echo htmlspecialchars($row['doctor_name']); ?></td>
@@ -223,24 +318,47 @@ require_once __DIR__ . '/../../includes/header.php';
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a
-                                            href="/lab-system/index.php?page=analysis_view&id=<?php echo (int)$row['id']; ?>"
-                                            class="btn btn-outline-light btn-sm"
-                                        >
-                                            Открыть
-                                        </a>
-                                        <a
-                                            href="/lab-system/pages/doctor/analysis_export.php?id=<?php echo (int)$row['id']; ?>&mode=check"
-                                            class="btn btn-outline-success btn-sm"
-                                        >
-                                            Чек
-                                        </a>
-                                        <a
-                                            href="/lab-system/pages/doctor/analysis_export.php?id=<?php echo (int)$row['id']; ?>&mode=full"
-                                            class="btn btn-outline-success btn-sm"
-                                        >
-                                            Отчёт
-                                        </a>
+                                        <?php if ($row['analysis_category'] === 'combined'): ?>
+                                            <!-- Для комбинированного анализа -->
+                                            <a
+                                                href="/lab-system/index.php?page=combined_view&id=<?php echo (int)$row['id']; ?>"
+                                                class="btn btn-outline-light btn-sm"
+                                            >
+                                                Открыть
+                                            </a>
+                                            <a
+                                                href="/lab-system/pages/doctor/combined_export.php?id=<?php echo (int)$row['id']; ?>&mode=check"
+                                                class="btn btn-outline-success btn-sm"
+                                            >
+                                                Чек
+                                            </a>
+                                            <a
+                                                href="/lab-system/pages/doctor/combined_export.php?id=<?php echo (int)$row['id']; ?>&mode=full"
+                                                class="btn btn-outline-success btn-sm"
+                                            >
+                                                Отчёт
+                                            </a>
+                                        <?php else: ?>
+                                            <!-- Для обычного анализа -->
+                                            <a
+                                                href="/lab-system/index.php?page=analysis_view&id=<?php echo (int)$row['id']; ?>"
+                                                class="btn btn-outline-light btn-sm"
+                                            >
+                                                Открыть
+                                            </a>
+                                            <a
+                                                href="/lab-system/pages/doctor/analysis_export.php?id=<?php echo (int)$row['id']; ?>&mode=check"
+                                                class="btn btn-outline-success btn-sm"
+                                            >
+                                                Чек
+                                            </a>
+                                            <a
+                                                href="/lab-system/pages/doctor/analysis_export.php?id=<?php echo (int)$row['id']; ?>&mode=full"
+                                                class="btn btn-outline-success btn-sm"
+                                            >
+                                                Отчёт
+                                            </a>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -260,6 +378,8 @@ require_once __DIR__ . '/../../includes/header.php';
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-3 gap-2">
             <div class="text-muted-soft small">
                 Найдено анализов: <strong><?php echo count($analyses); ?></strong><br>
+                - Обычные: <strong><?php echo $regularCount; ?></strong><br>
+                - Комбинированные: <strong><?php echo $combinedCount; ?></strong><br>
                 Итоговая сумма по фильтру:
                 <strong><?php echo number_format($grandTotal, 2, '.', ' '); ?></strong>
             </div>

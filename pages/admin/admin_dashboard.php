@@ -209,6 +209,17 @@ require_once __DIR__ . '/../../includes/header.php';
                 </div>
             </a>
         </div>
+        <!-- Добавьте эту плитку в существующую секцию -->
+<div class="col-12 col-md-4 col-lg-3">
+    <a href="/lab-system/index.php?page=you" class="dashboard-tile">
+        <div class="dashboard-tile-type">Комбинированные</div>
+        <div class="dashboard-tile-title">Комбинированные анализы</div>
+        <div class="dashboard-tile-desc">
+            Просмотр и редактирование комплексных анализов.
+        </div>
+    </a>
+</div>
+
         <div class="col-12 col-md-4 col-lg-3">
             <a href="/lab-system/index.php?page=admin_stats" class="dashboard-tile">
                 <div class="dashboard-tile-type">Статистика</div>
@@ -219,6 +230,7 @@ require_once __DIR__ . '/../../includes/header.php';
             </a>
         </div>
     </div>
+
 
     <!-- Фильтр по дате -->
     <div class="panel p-3 mb-3" id="reports-block">

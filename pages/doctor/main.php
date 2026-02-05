@@ -152,6 +152,16 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 
+    <!-- Добавленная карточка для объединенного анализа -->
+<div class="col-12 col-md-6 col-lg-3">
+    <a href="/lab-system/index.php?page=our" class="dashboard-tile">
+        <div class="dashboard-tile-type">Объединённый</div>
+        <div class="dashboard-tile-title">БА+ТУХ+ТУП</div>
+        <div class="dashboard-tile-desc">
+            Все три анализа в одном: биохимия, кровь и моча.
+        </div>
+    </a>
+</div>
     <!-- Блок быстрых действий -->
     <div class="row g-3 mt-4">
         <div class="col-12 col-lg-6">

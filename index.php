@@ -96,6 +96,17 @@ switch ($page) {
         require __DIR__ . '/pages/doctor/ifa.php';
         break;
 
+    case 'our':
+        // Объединённый анализ (БА + ТУХ + ТУП)
+        require_auth();
+        require __DIR__ . '/pages/doctor/our.php';
+        break;
+        // В файле index.php добавляем:
+case 'combined_view':
+    require_auth();
+    require __DIR__ . '/pages/doctor/combined_view.php';
+    break;
+
     case 'analysis_view':
         require_auth();
         require __DIR__ . '/pages/doctor/analysis_view.php';
@@ -173,7 +184,10 @@ switch ($page) {
         require __DIR__ . '/pages/admin/admin_users_export.php';
         break;
 
-
+        case 'you':
+        require_admin();
+        require __DIR__ . '/pages/admin/you.php';
+        break;
     // --- ОШИБКА / НЕИЗВЕСТНАЯ СТРАНИЦА ---
     default:
         require __DIR__ . '/pages/errors/404.php';

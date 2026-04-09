@@ -245,6 +245,7 @@ require_once __DIR__ . '/../../includes/header.php';
         <h1 class="h5 mb-0">Комплексный анализ (отчёт)</h1>
 
         <div class="d-flex flex-wrap gap-2">
+         
             <!-- Печать HTML-версии -->
             <button type="button" class="btn btn-outline-light btn-sm" onclick="window.print()">
                 🖨 Печать
